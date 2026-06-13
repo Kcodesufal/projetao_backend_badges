@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'autenticacao',
     'ongs',
     'professores',
+    'turmas',
 ]
 
 MIDDLEWARE = [
