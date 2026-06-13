@@ -1,0 +1,1 @@
+from .aplicacao import Aplicacao
