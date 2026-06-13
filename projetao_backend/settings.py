@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'ongs',
     'professores',
     'turmas',
+    'estudantes',
 ]
 
 MIDDLEWARE = [
