@@ -10,8 +10,8 @@ class OngSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Ong
-        fields = ('id', 'usuario', 'usuario_detalhes', 'cnpj', 'razao_social', 'causa_social', 'data_criacao')
-        read_only_fields = ('id', 'data_criacao', 'usuario_detalhes')
+        fields = ('id', 'usuario', 'usuario_detalhes', 'cnpj', 'razao_social', 'causa_social', 'avaliacao_media', 'data_criacao')
+        read_only_fields = ('id', 'avaliacao_media', 'data_criacao', 'usuario_detalhes')
         extra_kwargs = {
             'usuario': {'write_only': True},
         }

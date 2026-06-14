@@ -21,6 +21,13 @@ class Ong(models.Model):
     cnpj = models.CharField(max_length=18, unique=True, validators=[validar_cnpj])
     razao_social = models.CharField(max_length=255)
     causa_social = models.CharField(max_length=50, choices=CausaSocial.choices)
+    avaliacao_media = models.DecimalField(
+        max_digits=3,
+        decimal_places=1,
+        null=True,
+        blank=True,
+        help_text='Média das avaliações recebidas (0 a 10)',
+    )
     data_criacao = models.DateTimeField(auto_now_add=True)
 
     class Meta:

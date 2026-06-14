@@ -1,10 +1,12 @@
 from rest_framework import mixins, viewsets, status
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from ongs.models.ong import Ong
 from ongs.serializers.ong import OngSerializer, AtualizarOngSerializer
+from ongs.serializers.avaliacao import AvaliacaoOngSerializer
 
 
 @extend_schema_view(
@@ -37,3 +39,14 @@ class OngViewSet(
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(OngSerializer(instance).data, status=status.HTTP_200_OK)
+
+    @extend_schema(responses={200: AvaliacaoOngSerializer(many=True)})
+    @action(detail=True, methods=['get'], url_path='avaliacoes')
+    def avaliacoes(self, request, pk=None):
+        ong = self.get_object()
+        avaliacoes = ong.avaliacoes.select_related(
+            'estudante__usuario',
+            'projeto',
+        ).order_by('-data_avaliacao')
+        serializer = AvaliacaoOngSerializer(avaliacoes, many=True)
+        return Response(serializer.data)
