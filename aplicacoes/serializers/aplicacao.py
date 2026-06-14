@@ -4,6 +4,7 @@ from aplicacoes.models.aplicacao import Aplicacao
 
 
 class AplicacaoSerializer(serializers.ModelSerializer):
+    turma_id = serializers.IntegerField(source='turma.id', read_only=True)
     professor_nome = serializers.CharField(source='professor.usuario.nome', read_only=True)
     turma_nome = serializers.CharField(source='turma.nome', read_only=True)
     atividade_nome = serializers.CharField(source='atividade.nome', read_only=True)
@@ -20,6 +21,7 @@ class AplicacaoSerializer(serializers.ModelSerializer):
             'professor',
             'professor_nome',
             'turma',
+            'turma_id',
             'turma_nome',
             'atividade',
             'atividade_nome',
@@ -41,6 +43,7 @@ class AplicacaoSerializer(serializers.ModelSerializer):
             'data_aplicacao',
             'data_atualizacao',
             'professor_nome',
+            'turma_id',
             'turma_nome',
             'atividade_nome',
             'projeto_nome',
