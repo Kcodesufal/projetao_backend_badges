@@ -69,7 +69,7 @@ class EstudanteViewSet(
                 'atividade_nome': app.atividade.nome,
                 'projeto_id': app.atividade.projeto.id,
                 'projeto_nome': app.atividade.projeto.nome,
-                'ong_nome': app.atividade.projeto.ong.usuario.nome,
+                'ong_nome': app.atividade.projeto.ong.razao_social,
                 'turma_nome': app.turma.nome,
                 'data_inicio': app.atividade.data_inicio,
                 'data_fim': app.atividade.data_fim,

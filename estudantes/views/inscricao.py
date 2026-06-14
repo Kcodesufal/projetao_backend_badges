@@ -96,6 +96,15 @@ class InscricaoTurmaViewSet(
         inscricao = serializer.save()
         return Response(InscricaoDetalheSerializer(inscricao).data, status=status.HTTP_201_CREATED)
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user.role == 'estudante' and instance.status == EstudanteTurma.Status.ACEITO:
+            return Response(
+                {'detail': 'Você não pode cancelar uma inscrição que já foi aceita. Contate seu professor para ser removido.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().destroy(request, *args, **kwargs)
+
     @extend_schema(request=AtualizarStatusSerializer, responses={200: InscricaoDetalheSerializer})
     @action(detail=True, methods=['patch'], url_path='status')
     def atualizar_status(self, request, pk=None):
