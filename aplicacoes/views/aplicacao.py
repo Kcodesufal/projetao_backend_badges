@@ -35,11 +35,19 @@ class AplicacaoViewSet(
         return super().get_permissions()
 
     def get_queryset(self):
-        return Aplicacao.objects.select_related(
+        user = self.request.user
+        base_qs = Aplicacao.objects.select_related(
             'professor__usuario',
             'turma',
             'atividade__projeto__ong',
-        ).all()
+        )
+
+        if user.role == 'professor':
+            return base_qs.filter(professor__usuario=user)
+        elif user.role == 'ong':
+            return base_qs.filter(atividade__projeto__ong__usuario=user)
+        
+        return base_qs.all()
 
     def get_serializer_class(self):
         if self.action == 'atualizar_status':
@@ -69,6 +77,19 @@ class AplicacaoViewSet(
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(AplicacaoSerializer(aplicacao).data, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        aplicacao = self.get_object()
+        user = request.user
+        
+        if user.role != 'professor':
+            return Response({'detail': 'Apenas professores podem excluir aplicações.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        if aplicacao.professor.usuario != user:
+            return Response({'detail': 'Você não tem permissão para excluir esta aplicação.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        self.perform_destroy(aplicacao)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(responses={200: AplicacaoSerializer})
     @action(detail=True, methods=['post'], url_path='rejeitar-estudante')

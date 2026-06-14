@@ -48,10 +48,33 @@ class TurmaViewSet(
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
+        
+        try:
+            professor = Professor.objects.get(usuario=request.user)
+        except Professor.DoesNotExist:
+            return Response({'detail': 'Perfil de professor não encontrado.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        if not TurmaProfessor.objects.filter(turma=instance, professor=professor).exists():
+            return Response({'detail': 'Você não tem permissão para editar esta turma.'}, status=status.HTTP_403_FORBIDDEN)
+            
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(TurmaSerializer(instance).data, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        try:
+            professor = Professor.objects.get(usuario=request.user)
+        except Professor.DoesNotExist:
+            return Response({'detail': 'Perfil de professor não encontrado.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        if not TurmaProfessor.objects.filter(turma=instance, professor=professor).exists():
+            return Response({'detail': 'Você não tem permissão para excluir esta turma.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(responses={200: MinhasTurmasSerializer(many=True)})
     @action(detail=False, methods=['get'], url_path='minhas-turmas')
@@ -70,6 +93,22 @@ class TurmaViewSet(
     @action(detail=True, methods=['get'], url_path='inscricoes')
     def inscricoes(self, request, pk=None):
         turma = self.get_object()
+        user = request.user
+        has_access = False
+
+        if user.role == 'professor':
+            has_access = TurmaProfessor.objects.filter(turma=turma, professor__usuario=user).exists()
+        elif user.role == 'ong':
+            has_access = Aplicacao.objects.filter(turma=turma, atividade__projeto__ong__usuario=user, status=Aplicacao.Status.ACEITA).exists()
+        elif user.role == 'estudante':
+            from estudantes.models.estudantes_turmas import EstudanteTurma
+            has_access = EstudanteTurma.objects.filter(turma=turma, estudante__usuario=user, status=EstudanteTurma.Status.ACEITO).exists()
+        else:
+            has_access = True # Admin ou outros
+
+        if not has_access:
+            return Response({'detail': 'Você não tem permissão para visualizar os inscritos desta turma.'}, status=status.HTTP_403_FORBIDDEN)
+
         inscricoes = turma.inscricoes.select_related('estudante__usuario', 'turma__universidade').all()
         serializer = InscricaoDetalheSerializer(inscricoes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

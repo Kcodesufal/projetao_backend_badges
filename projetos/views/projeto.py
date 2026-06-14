@@ -45,10 +45,35 @@ class ProjetoViewSet(
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
+        
+        from ongs.models.ong import Ong
+        try:
+            ong = Ong.objects.get(usuario=request.user)
+        except Ong.DoesNotExist:
+            return Response({'detail': 'Perfil de ONG não encontrado.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        if instance.ong != ong:
+            return Response({'detail': 'Você não tem permissão para editar este projeto.'}, status=status.HTTP_403_FORBIDDEN)
+            
         serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(ProjetoSerializer(instance).data, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        
+        from ongs.models.ong import Ong
+        try:
+            ong = Ong.objects.get(usuario=request.user)
+        except Ong.DoesNotExist:
+            return Response({'detail': 'Perfil de ONG não encontrado.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        if instance.ong != ong:
+            return Response({'detail': 'Você não tem permissão para excluir este projeto.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @extend_schema(responses={200: 'Retorna lista de estudantes na equipe'})
     @action(detail=True, methods=['get'], url_path='equipe')
