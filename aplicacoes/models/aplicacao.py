@@ -3,6 +3,7 @@ from django.db import models
 from atividades.models.atividade import Atividade
 from professores.models.professores import Professor
 from turmas.models.turmas import Turma
+from estudantes.models.estudantes import Estudante
 
 
 class Aplicacao(models.Model):
@@ -29,6 +30,11 @@ class Aplicacao(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDENTE)
     justificativa = models.TextField(blank=True, default='', help_text='Motivação do professor para participar')
     feedback_ong = models.TextField(blank=True, default='', help_text='Resposta da ONG ao aceitar ou recusar')
+    estudantes_rejeitados = models.ManyToManyField(
+        Estudante,
+        blank=True,
+        related_name='aplicacoes_rejeitadas',
+    )
     data_aplicacao = models.DateTimeField(auto_now_add=True)
     data_atualizacao = models.DateTimeField(auto_now=True)
 

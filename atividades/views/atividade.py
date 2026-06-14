@@ -6,6 +6,9 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from atividades.models.atividade import Atividade
 from atividades.serializers.atividade import AtividadeSerializer, AtualizarAtividadeSerializer
 from projetos.permissions import IsOng
+from rest_framework.decorators import action
+from aplicacoes.models.aplicacao import Aplicacao
+from estudantes.models.estudantes_turmas import EstudanteTurma
 
 
 @extend_schema_view(
@@ -45,3 +48,38 @@ class AtividadeViewSet(
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(AtividadeSerializer(instance).data, status=status.HTTP_200_OK)
+
+    @extend_schema(responses={200: 'Retorna lista de estudantes na atividade'})
+    @action(detail=True, methods=['get'], url_path='equipe')
+    def equipe(self, request, pk=None):
+        atividade = self.get_object()
+        
+        aplicacoes = Aplicacao.objects.filter(
+            atividade=atividade, 
+            status=Aplicacao.Status.ACEITA
+        ).prefetch_related('estudantes_rejeitados', 'turma', 'atividade')
+        
+        resultado = []
+        for app in aplicacoes:
+            rejeitados_ids = set(app.estudantes_rejeitados.values_list('id', flat=True))
+            inscricoes = EstudanteTurma.objects.filter(
+                turma=app.turma,
+                status=EstudanteTurma.Status.ACEITO
+            ).exclude(
+                estudante_id__in=rejeitados_ids
+            ).select_related('estudante__usuario', 'turma__universidade')
+            
+            for insc in inscricoes:
+                resultado.append({
+                    'id': insc.id,
+                    'estudante': insc.estudante.id,
+                    'estudante_nome': insc.estudante.usuario.nome,
+                    'turma': insc.turma.id,
+                    'turma_nome': insc.turma.nome,
+                    'universidade_nome': insc.turma.universidade.nome,
+                    'atividade': app.atividade.id,
+                    'atividade_nome': app.atividade.nome,
+                    'aplicacao_id': app.id
+                })
+        
+        return Response(resultado, status=status.HTTP_200_OK)

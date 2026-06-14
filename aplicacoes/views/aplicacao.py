@@ -69,3 +69,29 @@ class AplicacaoViewSet(
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(AplicacaoSerializer(aplicacao).data, status=status.HTTP_200_OK)
+
+    @extend_schema(responses={200: AplicacaoSerializer})
+    @action(detail=True, methods=['post'], url_path='rejeitar-estudante')
+    def rejeitar_estudante(self, request, pk=None):
+        aplicacao = self.get_object()
+
+        try:
+            ong = Ong.objects.get(usuario=request.user)
+        except Ong.DoesNotExist:
+            return Response(
+                {'detail': 'Usuário não possui perfil de ONG.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if aplicacao.atividade.projeto.ong != ong:
+            return Response(
+                {'detail': 'Você não é a ONG responsável por este projeto.'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        estudante_id = request.data.get('estudante_id')
+        if not estudante_id:
+            return Response({'detail': 'estudante_id é obrigatório.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        aplicacao.estudantes_rejeitados.add(estudante_id)
+        return Response(AplicacaoSerializer(aplicacao).data, status=status.HTTP_200_OK)

@@ -50,20 +50,37 @@ class ProjetoViewSet(
         serializer.save()
         return Response(ProjetoSerializer(instance).data, status=status.HTTP_200_OK)
 
-    @extend_schema(responses={200: InscricaoDetalheSerializer(many=True)})
+    @extend_schema(responses={200: 'Retorna lista de estudantes na equipe'})
     @action(detail=True, methods=['get'], url_path='equipe')
     def equipe(self, request, pk=None):
         projeto = self.get_object()
         
-        turmas_ids = Aplicacao.objects.filter(
+        aplicacoes = Aplicacao.objects.filter(
             atividade__projeto=projeto, 
             status=Aplicacao.Status.ACEITA
-        ).values_list('turma_id', flat=True).distinct()
+        ).prefetch_related('estudantes_rejeitados', 'turma', 'atividade')
         
-        inscricoes = EstudanteTurma.objects.filter(
-            turma_id__in=turmas_ids,
-            status=EstudanteTurma.Status.ACEITO
-        ).select_related('estudante__usuario', 'turma__universidade')
+        resultado = []
+        for app in aplicacoes:
+            rejeitados_ids = set(app.estudantes_rejeitados.values_list('id', flat=True))
+            inscricoes = EstudanteTurma.objects.filter(
+                turma=app.turma,
+                status=EstudanteTurma.Status.ACEITO
+            ).exclude(
+                estudante_id__in=rejeitados_ids
+            ).select_related('estudante__usuario', 'turma__universidade')
+            
+            for insc in inscricoes:
+                resultado.append({
+                    'id': insc.id,
+                    'estudante': insc.estudante.id,
+                    'estudante_nome': insc.estudante.usuario.nome,
+                    'turma': insc.turma.id,
+                    'turma_nome': insc.turma.nome,
+                    'universidade_nome': insc.turma.universidade.nome,
+                    'atividade': app.atividade.id,
+                    'atividade_nome': app.atividade.nome,
+                    'aplicacao_id': app.id
+                })
         
-        serializer = InscricaoDetalheSerializer(inscricoes, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(resultado, status=status.HTTP_200_OK)

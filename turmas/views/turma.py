@@ -10,6 +10,7 @@ from turmas.models.turmas_professor import TurmaProfessor
 from turmas.permissions import IsProfessor
 from turmas.serializers.turma import TurmaSerializer, AtualizarTurmaSerializer, MinhasTurmasSerializer
 from estudantes.serializers.inscricao import InscricaoDetalheSerializer
+from aplicacoes.models.aplicacao import Aplicacao
 
 
 @extend_schema_view(
@@ -72,3 +73,27 @@ class TurmaViewSet(
         inscricoes = turma.inscricoes.select_related('estudante__usuario', 'turma__universidade').all()
         serializer = InscricaoDetalheSerializer(inscricoes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(responses={200: 'Retorna lista de atividades alocadas para a turma'})
+    @action(detail=True, methods=['get'], url_path='atividades')
+    def atividades(self, request, pk=None):
+        turma = self.get_object()
+        aplicacoes = Aplicacao.objects.filter(
+            turma=turma,
+            status=Aplicacao.Status.ACEITA
+        ).select_related('atividade__projeto__ong')
+        
+        resultado = []
+        for app in aplicacoes:
+            resultado.append({
+                'aplicacao_id': app.id,
+                'atividade_id': app.atividade.id,
+                'atividade_nome': app.atividade.nome,
+                'projeto_id': app.atividade.projeto.id,
+                'projeto_nome': app.atividade.projeto.nome,
+                'ong_nome': app.atividade.projeto.ong.usuario.nome,
+                'data_inicio': app.atividade.data_inicio,
+                'data_fim': app.atividade.data_fim,
+            })
+            
+        return Response(resultado, status=status.HTTP_200_OK)

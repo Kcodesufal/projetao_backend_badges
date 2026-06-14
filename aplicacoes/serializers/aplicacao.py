@@ -8,6 +8,10 @@ class AplicacaoSerializer(serializers.ModelSerializer):
     turma_nome = serializers.CharField(source='turma.nome', read_only=True)
     atividade_nome = serializers.CharField(source='atividade.nome', read_only=True)
     projeto_nome = serializers.CharField(source='atividade.projeto.nome', read_only=True)
+    projeto_id = serializers.IntegerField(source='atividade.projeto.id', read_only=True)
+    ong_nome = serializers.CharField(source='atividade.projeto.ong.razao_social', read_only=True)
+    data_inicio = serializers.DateField(source='atividade.data_inicio', read_only=True)
+    data_fim = serializers.DateField(source='atividade.data_fim', read_only=True)
 
     class Meta:
         model = Aplicacao
@@ -20,6 +24,10 @@ class AplicacaoSerializer(serializers.ModelSerializer):
             'atividade',
             'atividade_nome',
             'projeto_nome',
+            'projeto_id',
+            'ong_nome',
+            'data_inicio',
+            'data_fim',
             'justificativa',
             'status',
             'feedback_ong',
@@ -36,6 +44,10 @@ class AplicacaoSerializer(serializers.ModelSerializer):
             'turma_nome',
             'atividade_nome',
             'projeto_nome',
+            'projeto_id',
+            'ong_nome',
+            'data_inicio',
+            'data_fim',
         )
         extra_kwargs = {
             'professor': {'write_only': True},

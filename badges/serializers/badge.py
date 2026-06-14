@@ -37,10 +37,17 @@ class BadgeCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context['request'].user
         
-        # Atribuir o emissor baseado no role do usuário logado
         if user.role == 'ong':
-            validated_data['emissor_ong'] = user.ongs.first() # Supondo related_name
+            from ongs.models.ong import Ong
+            try:
+                validated_data['emissor_ong'] = Ong.objects.get(usuario=user)
+            except Ong.DoesNotExist:
+                pass
         elif user.role == 'professor':
-            validated_data['emissor_professor'] = user.professores.first() # Supondo related_name
+            from professores.models.professores import Professor
+            try:
+                validated_data['emissor_professor'] = Professor.objects.get(usuario=user)
+            except Professor.DoesNotExist:
+                pass
             
         return super().create(validated_data)

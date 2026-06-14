@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 
 from badges.models.badge import Badge
 from badges.serializers.badge import BadgeSerializer, BadgeCreateSerializer
-from badges.permissions import IsProfessorOrEstudanteForView, CanEmitBadge
+from badges.permissions import IsProfessorOrEstudanteOrOngForView, CanEmitBadge
 
 class BadgeViewSet(viewsets.ModelViewSet):
     queryset = Badge.objects.all()
@@ -15,11 +15,11 @@ class BadgeViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
-            permission_classes = [IsAuthenticated, IsProfessorOrEstudanteForView]
+            permission_classes = [IsAuthenticated, IsProfessorOrEstudanteOrOngForView]
         elif self.action in ['create']:
             permission_classes = [IsAuthenticated, CanEmitBadge]
         else:
-            permission_classes = [IsAuthenticated] # Or some specific admin permission
+            permission_classes = [IsAuthenticated]
         return [permission() for permission in permission_classes]
 
     def get_queryset(self):
@@ -27,10 +27,14 @@ class BadgeViewSet(viewsets.ModelViewSet):
         if user.role == 'estudante':
             return Badge.objects.filter(estudante__usuario=user)
         elif user.role == 'professor':
-            # Professor pode ver os badges de qualquer estudante (ou apenas dos estudantes que acessam, aqui retornamos todos)
             estudante_id = self.request.query_params.get('estudante_id')
             if estudante_id:
                 return Badge.objects.filter(estudante_id=estudante_id)
             return Badge.objects.all()
-        # Se for ONG ou outro (que não deveria ter acesso de view por causa das permissoes, mas por seguranca retornamos none)
+        elif user.role == 'ong':
+            estudante_id = self.request.query_params.get('estudante_id')
+            qs = Badge.objects.filter(emissor_ong__usuario=user)
+            if estudante_id:
+                return qs.filter(estudante_id=estudante_id)
+            return qs
         return Badge.objects.none()
