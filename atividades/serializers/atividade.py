@@ -4,6 +4,7 @@ from atividades.models.atividade import Atividade
 
 
 class AtividadeSerializer(serializers.ModelSerializer):
+    projeto_id = serializers.IntegerField(source='projeto.id', read_only=True)
     projeto_nome = serializers.CharField(source='projeto.nome', read_only=True)
 
     class Meta:
@@ -11,6 +12,7 @@ class AtividadeSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'projeto',
+            'projeto_id',
             'projeto_nome',
             'nome',
             'descricao',
@@ -21,7 +23,7 @@ class AtividadeSerializer(serializers.ModelSerializer):
             'vagas',
             'data_criacao',
         )
-        read_only_fields = ('id', 'data_criacao', 'projeto_nome')
+        read_only_fields = ('id', 'data_criacao', 'projeto_id', 'projeto_nome')
         extra_kwargs = {'projeto': {'write_only': True}}
 
     def validate(self, data):

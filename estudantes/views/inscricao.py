@@ -12,6 +12,7 @@ from estudantes.serializers.inscricao import (
     InscricaoDetalheSerializer,
     AtualizarStatusSerializer,
 )
+from professores.models.professores import Professor
 from turmas.models.turmas_professor import TurmaProfessor
 from turmas.permissions import IsProfessor
 
@@ -40,10 +41,33 @@ class InscricaoTurmaViewSet(
         return super().get_permissions()
 
     def get_queryset(self):
-        return EstudanteTurma.objects.select_related(
+        user = self.request.user
+        base_qs = EstudanteTurma.objects.select_related(
             'estudante__usuario',
             'turma__universidade',
-        ).all()
+        )
+
+        if user.role == 'estudante':
+            # Estudante só vê as próprias inscrições
+            try:
+                estudante = Estudante.objects.get(usuario=user)
+                return base_qs.filter(estudante=estudante)
+            except Estudante.DoesNotExist:
+                return base_qs.none()
+
+        if user.role == 'professor':
+            # Professor só vê inscrições das turmas que ele ministra
+            try:
+                professor = Professor.objects.get(usuario=user)
+                turma_ids = TurmaProfessor.objects.filter(
+                    professor=professor
+                ).values_list('turma_id', flat=True)
+                return base_qs.filter(turma_id__in=turma_ids)
+            except Professor.DoesNotExist:
+                return base_qs.none()
+
+        # ONGs, admins e demais roles vêem tudo
+        return base_qs.all()
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -55,6 +79,20 @@ class InscricaoTurmaViewSet(
     def create(self, request, *args, **kwargs):
         serializer = InscricaoTurmaSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
+
+        estudante = serializer.validated_data['estudante']
+        turma = serializer.validated_data['turma']
+
+        # Re-inscrição: se havia recusa anterior, reativa em vez de criar duplicata
+        existing_rejected = EstudanteTurma.objects.filter(
+            estudante=estudante, turma=turma, status=EstudanteTurma.Status.RECUSADO
+        ).first()
+
+        if existing_rejected:
+            existing_rejected.status = EstudanteTurma.Status.PRE_APROVADO
+            existing_rejected.save(update_fields=['status', 'data_atualizacao'])
+            return Response(InscricaoDetalheSerializer(existing_rejected).data, status=status.HTTP_200_OK)
+
         inscricao = serializer.save()
         return Response(InscricaoDetalheSerializer(inscricao).data, status=status.HTTP_201_CREATED)
 

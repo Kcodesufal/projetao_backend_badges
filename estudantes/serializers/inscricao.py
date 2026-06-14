@@ -18,7 +18,10 @@ class InscricaoTurmaSerializer(serializers.ModelSerializer):
         if not turma.ativa:
             raise serializers.ValidationError('Esta turma não está ativa.')
 
-        if EstudanteTurma.objects.filter(estudante=estudante, turma=turma).exists():
+        # Permite re-inscrição se a anterior foi recusada
+        if EstudanteTurma.objects.filter(
+            estudante=estudante, turma=turma
+        ).exclude(status=EstudanteTurma.Status.RECUSADO).exists():
             raise serializers.ValidationError('Estudante já está inscrito nesta turma.')
 
         return data

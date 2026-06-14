@@ -5,6 +5,7 @@ from projetos.models.projeto import Projeto
 
 
 class ProjetoSerializer(serializers.ModelSerializer):
+    ong_id = serializers.IntegerField(source='ong.id', read_only=True)
     ong_nome = serializers.CharField(source='ong.razao_social', read_only=True)
 
     class Meta:
@@ -12,6 +13,7 @@ class ProjetoSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'ong',
+            'ong_id',
             'ong_nome',
             'nome',
             'descricao',
@@ -25,7 +27,7 @@ class ProjetoSerializer(serializers.ModelSerializer):
             'data_criacao',
             'data_atualizacao',
         )
-        read_only_fields = ('id', 'data_criacao', 'data_atualizacao', 'ong_nome')
+        read_only_fields = ('id', 'data_criacao', 'data_atualizacao', 'ong_id', 'ong_nome')
         extra_kwargs = {'ong': {'write_only': True}}
 
     def validate(self, data):

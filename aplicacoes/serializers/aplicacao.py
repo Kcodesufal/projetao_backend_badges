@@ -10,6 +10,7 @@ class AplicacaoSerializer(serializers.ModelSerializer):
     atividade_nome = serializers.CharField(source='atividade.nome', read_only=True)
     projeto_nome = serializers.CharField(source='atividade.projeto.nome', read_only=True)
     projeto_id = serializers.IntegerField(source='atividade.projeto.id', read_only=True)
+    ong_id = serializers.IntegerField(source='atividade.projeto.ong.id', read_only=True)
     ong_nome = serializers.CharField(source='atividade.projeto.ong.razao_social', read_only=True)
     data_inicio = serializers.DateField(source='atividade.data_inicio', read_only=True)
     data_fim = serializers.DateField(source='atividade.data_fim', read_only=True)
@@ -27,6 +28,7 @@ class AplicacaoSerializer(serializers.ModelSerializer):
             'atividade_nome',
             'projeto_nome',
             'projeto_id',
+            'ong_id',
             'ong_nome',
             'data_inicio',
             'data_fim',
@@ -48,6 +50,7 @@ class AplicacaoSerializer(serializers.ModelSerializer):
             'atividade_nome',
             'projeto_nome',
             'projeto_id',
+            'ong_id',
             'ong_nome',
             'data_inicio',
             'data_fim',
