@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'projetos',
     'atividades',
     'aplicacoes',
+    'badges',
     'historico',
 ]
 
