@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'atividades',
     'aplicacoes',
     'historico',
+    'certificados',
 ]
 
 MIDDLEWARE = [
