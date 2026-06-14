@@ -9,7 +9,7 @@ class BadgeSerializer(serializers.ModelSerializer):
         model = Badge
         fields = [
             'id', 'estudante', 'tipo', 'nivel', 'descricao', 
-            'justificativa', 'data_emissao', 'emissor_nome', 'emissor_tipo'
+            'justificativa', 'data_emissao', 'emissor_nome', 'emissor_tipo', 'aplicacao'
         ]
         read_only_fields = ['data_emissao', 'emissor_nome', 'emissor_tipo']
 
@@ -31,8 +31,35 @@ class BadgeCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Badge
         fields = [
-            'estudante', 'tipo', 'nivel', 'descricao', 'justificativa'
+            'estudante', 'tipo', 'nivel', 'descricao', 'justificativa', 'aplicacao'
         ]
+
+    def validate(self, data):
+        user = self.context['request'].user
+        if user.role == 'ong':
+            aplicacao = data.get('aplicacao')
+            if not aplicacao:
+                raise serializers.ValidationError({'aplicacao': 'A ONG deve informar a aplicação associada ao badge.'})
+            
+            if aplicacao.atividade.projeto.ong.usuario != user:
+                raise serializers.ValidationError('Você não é a ONG responsável por esta aplicação.')
+            
+            estudante = data.get('estudante')
+            from estudantes.models.estudantes_turmas import EstudanteTurma
+            is_aceito = EstudanteTurma.objects.filter(
+                estudante=estudante,
+                turma=aplicacao.turma,
+                status=EstudanteTurma.Status.ACEITO
+            ).exists()
+            
+            if not is_aceito:
+                raise serializers.ValidationError('O estudante não está inscrito ou aceito na turma desta aplicação.')
+            
+            # Verificar se o estudante não foi rejeitado pela ONG
+            if aplicacao.estudantes_rejeitados.filter(id=estudante.id).exists():
+                raise serializers.ValidationError('Este estudante foi removido desta atividade pela ONG.')
+                
+        return data
 
     def create(self, validated_data):
         user = self.context['request'].user

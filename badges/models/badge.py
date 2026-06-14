@@ -30,6 +30,7 @@ class Badge(models.Model):
     
     emissor_professor = models.ForeignKey(Professor, on_delete=models.SET_NULL, null=True, blank=True, related_name='badges_emitidas')
     emissor_ong = models.ForeignKey(Ong, on_delete=models.SET_NULL, null=True, blank=True, related_name='badges_emitidas')
+    aplicacao = models.ForeignKey('aplicacoes.Aplicacao', on_delete=models.SET_NULL, null=True, blank=True, related_name='badges')
 
     class Meta:
         db_table = 'badges'
