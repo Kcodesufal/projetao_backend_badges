@@ -55,11 +55,7 @@ class AplicacaoSerializer(serializers.ModelSerializer):
             'data_inicio',
             'data_fim',
         )
-        extra_kwargs = {
-            'professor': {'write_only': True},
-            'turma': {'write_only': True},
-            'atividade': {'write_only': True},
-        }
+        extra_kwargs = {}
 
     def validate(self, data):
         professor = data.get('professor')
@@ -87,3 +83,43 @@ class AtualizarStatusAplicacaoSerializer(serializers.ModelSerializer):
         if value == Aplicacao.Status.PENDENTE:
             raise serializers.ValidationError('Não é possível reverter para Pendente.')
         return value
+
+    def validate(self, data):
+        status_val = data.get('status')
+        if not status_val or status_val != Aplicacao.Status.ACEITA:
+            return data
+            
+        if self.instance and self.instance.status == Aplicacao.Status.ACEITA:
+            return data
+            
+        atividade = self.instance.atividade
+        projeto = atividade.projeto
+        turma = self.instance.turma
+        
+        aplicacoes_aceitas_atividade = Aplicacao.objects.filter(
+            atividade=atividade,
+            status=Aplicacao.Status.ACEITA
+        ).count()
+        
+        if aplicacoes_aceitas_atividade >= atividade.vagas:
+            raise serializers.ValidationError(
+                {'status': f'Limite de vagas ({atividade.vagas}) esgotado para a atividade {atividade.nome}.'}
+            )
+            
+        turmas_aceitas_projeto = Aplicacao.objects.filter(
+            atividade__projeto=projeto,
+            status=Aplicacao.Status.ACEITA
+        ).values('turma').distinct().count()
+        
+        ja_aceita_no_projeto = Aplicacao.objects.filter(
+            atividade__projeto=projeto,
+            turma=turma,
+            status=Aplicacao.Status.ACEITA
+        ).exists()
+        
+        if not ja_aceita_no_projeto and turmas_aceitas_projeto >= projeto.vagas_turmas:
+            raise serializers.ValidationError(
+                {'status': f'Limite de turmas ({projeto.vagas_turmas}) esgotado para o projeto {projeto.nome}.'}
+            )
+            
+        return data
