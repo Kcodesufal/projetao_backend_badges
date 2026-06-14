@@ -9,6 +9,7 @@ from turmas.models.turmas import Turma
 from turmas.models.turmas_professor import TurmaProfessor
 from turmas.permissions import IsProfessor
 from turmas.serializers.turma import TurmaSerializer, AtualizarTurmaSerializer, MinhasTurmasSerializer
+from estudantes.serializers.inscricao import InscricaoDetalheSerializer
 
 
 @extend_schema_view(
@@ -62,4 +63,12 @@ class TurmaViewSet(
         ids_turmas = TurmaProfessor.objects.filter(professor=professor).values_list('turma_id', flat=True)
         turmas = Turma.objects.filter(id__in=ids_turmas).select_related('universidade').prefetch_related('turmas_professor')
         serializer = MinhasTurmasSerializer(turmas, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(responses={200: InscricaoDetalheSerializer(many=True)})
+    @action(detail=True, methods=['get'], url_path='inscricoes')
+    def inscricoes(self, request, pk=None):
+        turma = self.get_object()
+        inscricoes = turma.inscricoes.select_related('estudante__usuario', 'turma__universidade').all()
+        serializer = InscricaoDetalheSerializer(inscricoes, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
